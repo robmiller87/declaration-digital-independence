@@ -17,25 +17,46 @@ export async function GET() {
     // Use BETA_SPACE_ID env var if set (for workshop), otherwise use default from config
     const querySpaceId = process.env.BETA_SPACE_ID || SPACE_ID;
     
-    // Fetch messages and txHash entities in parallel (following codebase pattern)
-    const [result, txHashResult] = await Promise.all([
-      publicClient
-        .buildQuery()
-        .where(eq('type', 'workshop_message'))
-        .where(eq('spaceId', querySpaceId))
-        .withAttributes(true)
-        .withPayload(true)
-        .limit(100)
-        .fetch(),
-      publicClient
-        .buildQuery()
-        .where(eq('type', 'workshop_message_txhash'))
-        .where(eq('spaceId', querySpaceId))
-        .withAttributes(true)
-        .withPayload(true)
-        .limit(100)
-        .fetch(),
+    // Query multiple spaceIds to ensure we catch all messages regardless of which space they were created in
+    // This handles cases where students might have used different spaceIds
+    // Always include 'ns' (default shared space) and the configured spaceId
+    const spaceIdsToQuery = Array.from(new Set([querySpaceId, 'ns']));
+    
+    // Fetch messages and txHash entities from all spaces in parallel
+    const [messageResults, txHashResults] = await Promise.all([
+      Promise.all(
+        spaceIdsToQuery.map(spaceId =>
+          publicClient
+            .buildQuery()
+            .where(eq('type', 'workshop_message'))
+            .where(eq('spaceId', spaceId))
+            .withAttributes(true)
+            .withPayload(true)
+            .limit(100)
+            .fetch()
+        )
+      ),
+      Promise.all(
+        spaceIdsToQuery.map(spaceId =>
+          publicClient
+            .buildQuery()
+            .where(eq('type', 'workshop_message_txhash'))
+            .where(eq('spaceId', spaceId))
+            .withAttributes(true)
+            .withPayload(true)
+            .limit(100)
+            .fetch()
+        )
+      ),
     ]);
+    
+    // Combine results from all spaces
+    const result = {
+      entities: messageResults.flatMap(r => r.entities || []),
+    };
+    const txHashResult = {
+      entities: txHashResults.flatMap(r => r.entities || []),
+    };
     
     // Build txHash map from companion entities
     const txHashMap: Record<string, string> = {};
@@ -104,8 +125,18 @@ export async function GET() {
       };
     });
     
+    // Deduplicate by entity key (in case same message appears in multiple spaces)
+    const seenKeys = new Set<string>();
+    const uniqueMessages = messages.filter(msg => {
+      if (seenKeys.has(msg.id)) {
+        return false;
+      }
+      seenKeys.add(msg.id);
+      return true;
+    });
+    
     // Sort by creation time (newest first)
-    messages.sort((a, b) => {
+    uniqueMessages.sort((a, b) => {
       const aTime = new Date(a.createdAt).getTime();
       const bTime = new Date(b.createdAt).getTime();
       return bTime - aTime;
@@ -113,7 +144,7 @@ export async function GET() {
     
     return NextResponse.json({
       ok: true,
-      messages,
+      messages: uniqueMessages,
     });
   } catch (error: any) {
     console.error('[messages/route] Error listing messages:', {

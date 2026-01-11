@@ -89,7 +89,9 @@ arkiv-hello-world/
 
 ## Verification
 
-- **View on Explorer:** Each message has a "View on Explorer" link to verify it on-chain
+- **View on Explorer:** Each message has both Entity and Transaction links to verify on-chain:
+  - **Entity link**: View the entity (data structure) on the explorer
+  - **Transaction link**: View the transaction (blockchain operation) on the explorer
 - **Shared visibility:** Your messages appear on the main demo page immediately
 - **Independent verification:** Anyone can query the same data independently
 

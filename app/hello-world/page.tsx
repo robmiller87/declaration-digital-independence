@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 interface Message {
-  id: string;
+  id: string; // Entity key
   text: string;
   wallet: string;
   createdAt: string;
-  txHash?: string;
+  txHash?: string; // Transaction hash
 }
 
 export default function ArkivHelloWorld() {
@@ -69,16 +68,10 @@ export default function ArkivHelloWorld() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-20 pb-8 px-8">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="flex justify-between items-start mb-4">
+          <div className="mb-4">
             <h1 className="text-3xl font-bold text-gray-900">
               🌍 Arkiv Hello World
             </h1>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm"
-            >
-              Home
-            </Link>
           </div>
           <p className="text-gray-600 mb-6">
             A simple decentralized message board powered by Arkiv
@@ -92,8 +85,8 @@ export default function ArkivHelloWorld() {
             </p>
             <p className="text-xs text-blue-700 mb-2">
               🌐 Connected to <strong>Mendoza Testnet</strong> • 
-              Each message is a blockchain transaction • 
-              Click "View on Explorer" to verify on-chain
+              Each message is stored as an <strong>entity</strong> (created via a <strong>transaction</strong>) • 
+              Click links below to verify on the explorer
             </p>
             <p className="text-xs text-blue-700">
               <strong>Note:</strong> Messages on this demo page are signed by a wallet saved as an 
@@ -147,21 +140,41 @@ export default function ArkivHelloWorld() {
                     className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
                   >
                     <p className="text-gray-900 mb-2">{msg.text}</p>
-                    <div className="flex justify-between items-center text-sm text-gray-500">
-                      <div className="flex gap-4">
-                        <span>Wallet: {msg.wallet.slice(0, 10)}...</span>
-                        <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                    <div className="flex flex-col gap-2 text-sm text-gray-500">
+                      <div className="flex justify-between items-center">
+                        <div className="flex gap-4">
+                          <span>Wallet: {msg.wallet.slice(0, 10)}...</span>
+                          <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                        </div>
                       </div>
-                      {msg.txHash && (
-                        <a
-                          href={`https://explorer.mendoza.hoodi.arkiv.network/tx/${msg.txHash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-700 hover:underline"
-                        >
-                          View on Explorer →
-                        </a>
-                      )}
+                      <div className="flex gap-4 items-center pt-1 border-t border-gray-100">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs font-semibold text-gray-400 uppercase">Entity</span>
+                          <a
+                            href={`https://explorer.mendoza.hoodi.arkiv.network/entity/${msg.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 hover:underline text-xs font-mono"
+                            title="View entity details on explorer"
+                          >
+                            {msg.id.slice(0, 16)}... →
+                          </a>
+                        </div>
+                        {msg.txHash && (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-semibold text-gray-400 uppercase">Transaction</span>
+                            <a
+                              href={`https://explorer.mendoza.hoodi.arkiv.network/tx/${msg.txHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 hover:underline text-xs font-mono"
+                              title="View transaction details on explorer"
+                            >
+                              {msg.txHash.slice(0, 16)}... →
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -171,12 +184,18 @@ export default function ArkivHelloWorld() {
 
           <div className="mt-8 pt-6 border-t border-gray-200">
             <h3 className="font-semibold mb-2">What's happening here?</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Messages are written to Arkiv (decentralized database)</li>
-              <li>• Each message is a transaction on the blockchain</li>
+            <ul className="text-sm text-gray-600 space-y-1 mb-4">
+              <li>• Messages are stored as <strong>entities</strong> on Arkiv (decentralized database)</li>
+              <li>• Creating an entity is also a <strong>transaction</strong> on the blockchain</li>
+              <li>• <strong>Entity</strong> = the data (your message, attributes, payload)</li>
+              <li>• <strong>Transaction</strong> = the blockchain operation that creates/records that entity</li>
               <li>• Anyone can read these messages (they're in the shared "ns" space)</li>
               <li>• No central database required!</li>
             </ul>
+            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
+              <p className="font-semibold mb-1">💡 Understanding Entities vs Transactions:</p>
+              <p>When you create a message, you get both an <strong>entity key</strong> (identifier for the data) and a <strong>transaction hash</strong> (identifier for the blockchain operation). Click the links above to see both on the explorer!</p>
+            </div>
           </div>
         </div>
       </div>
