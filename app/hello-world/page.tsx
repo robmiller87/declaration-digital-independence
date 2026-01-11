@@ -1,0 +1,185 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+
+interface Message {
+  id: string;
+  text: string;
+  wallet: string;
+  createdAt: string;
+  txHash?: string;
+}
+
+export default function ArkivHelloWorld() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newMessage, setNewMessage] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Load messages on mount
+  useEffect(() => {
+    loadMessages();
+  }, []);
+
+  const loadMessages = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/serverless-dapp101/messages');
+      const data = await res.json();
+      if (data.ok) {
+        setMessages(data.messages || []);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
+
+    try {
+      setSubmitting(true);
+      const res = await fetch('/api/serverless-dapp101/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newMessage }),
+      });
+      const data = await res.json();
+      
+      if (data.ok) {
+        setNewMessage('');
+        // Reload messages after a short delay (indexer lag)
+        setTimeout(loadMessages, 2000);
+      } else {
+        alert('Error: ' + (data.error || 'Failed to submit'));
+      }
+    } catch (error) {
+      console.error('Error submitting message:', error);
+      alert('Error submitting message');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 pt-20 pb-8 px-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <div className="flex justify-between items-start mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">
+              🌍 Arkiv Hello World
+            </h1>
+            <Link
+              href="/"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm"
+            >
+              Home
+            </Link>
+          </div>
+          <p className="text-gray-600 mb-6">
+            A simple decentralized message board powered by Arkiv
+          </p>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>What makes this special?</strong> These messages are stored on Arkiv, 
+              a decentralized database. They're not in a traditional database - they're on-chain 
+              and independently verifiable!
+            </p>
+            <p className="text-xs text-blue-700 mb-2">
+              🌐 Connected to <strong>Mendoza Testnet</strong> • 
+              Each message is a blockchain transaction • 
+              Click "View on Explorer" to verify on-chain
+            </p>
+            <p className="text-xs text-blue-700">
+              <strong>Note:</strong> Messages on this demo page are signed by a wallet saved as an 
+              environmental variable. When you create your own version, you'll use your own wallet 
+              (don't worry; no funds needed), but your messages will still appear here!
+            </p>
+          </div>
+
+          <form onSubmit={submitMessage} className="mb-6">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Write a message..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={submitting}
+              />
+              <button
+                type="submit"
+                disabled={submitting || !newMessage.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submitting ? 'Submitting...' : 'Post'}
+              </button>
+            </div>
+          </form>
+
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Messages</h2>
+              <button
+                onClick={loadMessages}
+                className="text-sm text-blue-600 hover:text-blue-700"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading messages...</div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                No messages yet. Be the first to post!
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+                  >
+                    <p className="text-gray-900 mb-2">{msg.text}</p>
+                    <div className="flex justify-between items-center text-sm text-gray-500">
+                      <div className="flex gap-4">
+                        <span>Wallet: {msg.wallet.slice(0, 10)}...</span>
+                        <span>{new Date(msg.createdAt).toLocaleString()}</span>
+                      </div>
+                      {msg.txHash && (
+                        <a
+                          href={`https://explorer.mendoza.hoodi.arkiv.network/tx/${msg.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-700 hover:underline"
+                        >
+                          View on Explorer →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <h3 className="font-semibold mb-2">What's happening here?</h3>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Messages are written to Arkiv (decentralized database)</li>
+              <li>• Each message is a transaction on the blockchain</li>
+              <li>• Anyone can read these messages (they're in the shared "ns" space)</li>
+              <li>• No central database required!</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
