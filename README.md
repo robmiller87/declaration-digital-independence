@@ -1,107 +1,97 @@
-# Arkiv Hello World
+# Declaration of Digital Independence
 
-A simple decentralized message board powered by Arkiv. This is the starter template for the [Serverless DApp 101 tutorial](https://serverlessdapp101.vercel.app).
+**Your signature. Your data. Forever.**
 
-## What This Demonstrates
+A decentralized petition for the sovereign web — signatures stored on-chain where no corporation, government, or platform can delete them.
 
-- **Read path:** Querying Arkiv entities via `createPublicClient` + query builder
-- **Write path:** Server-signed writes via Next.js API routes (Phase 0)
-- **Optimistic UI:** Handling "submitted vs indexed" states gracefully
-- **Error handling:** Timeout, rate limit, and network error classification
-- **Shared space:** Uses `SPACE_ID=ns` so all messages appear on the main demo page
+---
 
-## Quick Start
+## 🔥 The Declaration
 
-1. **Fork this repository** on GitHub
+> *"We hold these truths to be self-evident: that our data belongs to us, that no corporation should hold our digital lives hostage, and that sovereignty is not a feature — it is a right."*
 
-2. **Clone your fork:**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/arkiv-hello-world.git
-   cd arkiv-hello-world
-   ```
+---
 
-3. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+## Why This Exists
 
-4. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and set:
-   # - SPACE_ID=ns (shared workshop space - already set)
-   # - ARKIV_PRIVATE_KEY=0x... (your testnet wallet private key)
-   ```
+Big Tech owns your digital life:
+- Your posts? Theirs.
+- Your photos? Theirs.
+- Your messages? Theirs.
+- Your identity? Rented.
 
-5. **Get testnet tokens:**
-   - Generate a wallet using the [Arkiv Getting Started guide](https://arkiv.network/getting-started/typescript)
-   - Get testnet tokens from the [Mendoza Testnet Faucet](https://mendoza.hoodi.arkiv.network/faucet/)
-   - Add your private key to `.env`
+They can ban you, shadow you, delete you — and you have zero recourse.
 
-6. **Run development server:**
-   ```bash
-   npm run dev
-   ```
+**This Declaration is a line in the sand.**
 
-7. **Visit:**
-   - Homepage: `http://localhost:3000`
-   - Hello World Demo: `http://localhost:3000/hello-world`
+Every signature is:
+- ✅ Stored on [Arkiv](https://arkiv.network) (decentralized database)
+- ✅ Cryptographically verifiable
+- ✅ Permanent — no company can delete it
+- ✅ Independently auditable by anyone
 
-## Important: Shared Workshop Space
+---
 
-This demo uses `SPACE_ID=ns` by default. This means:
-- ✅ Messages from **any wallet** will appear on the main demo page
-- ✅ All tutorial participants can see each other's messages
-- ✅ Demonstrates the decentralized nature of Arkiv
-- ✅ No central database - all data is on-chain
+## Sign the Declaration
 
-When you create a message from your local app, it will appear on:
-- Your local app at `http://localhost:3000/hello-world`
-- The main demo at `https://serverlessdapp101.vercel.app/hello-world`
-- Any other app using `SPACE_ID=ns`
+**Live:** [declaration-digital-independence.vercel.app](https://declaration-digital-independence.vercel.app)
 
-## Project Structure
+No wallet required. Just your name and conviction.
 
-```
-arkiv-hello-world/
-├── app/
-│   ├── hello-world/page.tsx          # Message board UI
-│   ├── api/serverless-dapp101/
-│   │   └── messages/route.ts        # Messages API
-│   ├── page.tsx                     # Homepage
-│   └── layout.tsx                   # Root layout
-├── lib/
-│   ├── arkiv/
-│   │   ├── client.ts                # Arkiv client utilities
-│   │   └── transaction-utils.ts    # Transaction helpers
-│   └── config.ts                    # Configuration (SPACE_ID, etc.)
-├── .env.example                     # Environment variable template
-└── README.md                        # This file
+*(Optional: Connect your wallet for cryptographic proof of identity)*
+
+---
+
+## Tech Stack
+
+- **Frontend:** Next.js 15
+- **Storage:** [Arkiv](https://arkiv.network) (Mendoza Testnet)
+- **Signatures:** On-chain entities with verifiable transaction hashes
+- **Philosophy:** Walkaway-compliant — if we disappear, the data lives on
+
+---
+
+## For Builders
+
+Want to add decentralized, uncensorable data to your app?
+
+```bash
+git clone https://github.com/robmiller87/declaration-digital-independence.git
+cd declaration-digital-independence
+cp .env.example .env
+# Add your ARKIV_PRIVATE_KEY
+npm install
+npm run dev
 ```
 
-## How It Works
+Check out [Arkiv's workshop](https://serverlessdapp101.vercel.app) to learn how it works.
 
-1. **Writing messages:** When you submit a message, it's sent to `/api/serverless-dapp101/messages` (POST)
-2. **Creating entities:** The API creates a `workshop_message` entity on Arkiv with your message
-3. **Shared space:** All entities use `spaceId='ns'`, so they're queryable by anyone
-4. **Reading messages:** The page queries all `workshop_message` entities with `spaceId='ns'`
-5. **Decentralized:** No central database - all data lives on Arkiv (Mendoza testnet)
+---
 
-## Verification
+## The Movement
 
-- **View on Explorer:** Each message has both Entity and Transaction links to verify on-chain:
-  - **Entity link**: View the entity (data structure) on the explorer
-  - **Transaction link**: View the transaction (blockchain operation) on the explorer
-- **Shared visibility:** Your messages appear on the main demo page immediately
-- **Independent verification:** Anyone can query the same data independently
+This isn't just a petition. It's infrastructure.
 
-## Resources
+- **Agents** need sovereign identity
+- **Humans** need data ownership
+- **Communities** need censorship resistance
 
-- [Serverless DApp 101 Tutorial](https://serverlessdapp101.vercel.app) - Full tutorial
-- [Arkiv Network](https://arkiv.network) - Official documentation
-- [Arkiv Getting Started](https://arkiv.network/getting-started/typescript) - Wallet generation
-- [Mendoza Testnet Faucet](https://mendoza.hoodi.arkiv.network/faucet/) - Get testnet tokens
+The Declaration is step one. What we build next is up to us.
+
+---
+
+## Signatories
+
+View all signatures on-chain: [declaration-digital-independence.vercel.app](https://declaration-digital-independence.vercel.app)
+
+*First signer: Robert Miller — February 17, 2026*
+
+---
 
 ## License
 
-MIT
+MIT — Take it. Fork it. Build on it. That's the point.
+
+---
+
+**Sovereignty is not a feature. It is a right.**
