@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getPublicClient, getWalletClientFromPrivateKey } from '../../../lib/arkiv/client';
 import { SPACE_ID, getPrivateKey } from '../../../lib/config';
 import { handleTransactionWithTimeout } from '../../../lib/arkiv/transaction-utils';
+import { isTransactionTimeoutError, isRateLimitError } from '../../../lib/arkiv/transaction-utils';
 import { eq } from '@arkiv-network/sdk/query';
 
 const enc = new TextEncoder();
@@ -132,85 +133,107 @@ export async function GET() {
     });
     
     return NextResponse.json({ ok: true, signatures: uniqueSignatures });
-  } catch (error) {
+  } catch (error: any) {
     console.error('[signatures/route] GET error:', error);
-    return NextResponse.json({ ok: false, error: 'Failed to fetch signatures' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Failed to fetch signatures', signatures: [] }, { status: 500 });
   }
 }
 
 // POST: Create new signature
 export async function POST(request: NextRequest) {
   try {
-    const { name, message, signerWallet } = await request.json();
+    const privateKey = getPrivateKey(); // Throws if not configured
+    const body = await request.json();
+    const { name, message, signerWallet } = body;
     
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ ok: false, error: 'Name is required' }, { status: 400 });
     }
     
-    const privateKey = getPrivateKey();
-    if (!privateKey) {
-      return NextResponse.json({ ok: false, error: 'Server wallet not configured' }, { status: 500 });
-    }
-    
     const walletClient = getWalletClientFromPrivateKey(privateKey);
-    const attestedBy = walletClient.account.address;
+    const attestedBy = walletClient.account.address.toLowerCase();
     const timestamp = new Date().toISOString();
     
-    const payload = {
+    const querySpaceId = process.env.BETA_SPACE_ID || SPACE_ID;
+    
+    // Create payload
+    const payload = JSON.stringify({
       name: name.trim(),
       message: message?.trim() || '',
       timestamp,
       signerWallet: signerWallet || null,
       attestedBy,
-    };
+    });
     
-    const spaceId = process.env.BETA_SPACE_ID || SPACE_ID;
+    // Create attributes
+    const attributes = [
+      { key: 'type', value: 'declaration_signature' },
+      { key: 'name', value: name.trim() },
+      { key: 'attestedBy', value: attestedBy },
+      { key: 'spaceId', value: querySpaceId },
+      { key: 'timestamp', value: timestamp },
+    ];
     
-    // Create the signature entity
-    const result = await handleTransactionWithTimeout(async () => {
-      return walletClient.createEntity({
-        spaceId,
-        payload: enc.encode(JSON.stringify(payload)),
-        attributes: [
-          { key: 'type', value: 'declaration_signature' },
-          { key: 'name', value: payload.name },
-          { key: 'timestamp', value: timestamp },
-          { key: 'attestedBy', value: attestedBy },
-          ...(signerWallet ? [{ key: 'signerWallet', value: signerWallet }] : []),
-        ],
-      });
-    }, 30000);
-    
-    // Store txHash in companion entity
-    if (result && result.hash) {
-      try {
-        await walletClient.createEntity({
-          spaceId,
-          payload: enc.encode(JSON.stringify({ txHash: result.hash })),
-          attributes: [
-            { key: 'type', value: 'declaration_signature_txhash' },
-            { key: 'signatureKey', value: result.key || '' },
-            { key: 'txHash', value: result.hash },
-          ],
-        });
-      } catch (e) {
-        console.error('[signatures/route] Failed to store txHash entity:', e);
-      }
+    if (signerWallet) {
+      attributes.push({ key: 'signerWallet', value: signerWallet.toLowerCase() });
     }
     
-    return NextResponse.json({ 
-      ok: true, 
-      signature: {
-        id: result?.key || '',
-        ...payload,
-        txHash: result?.hash || '',
-      }
+    // Create entity on Arkiv
+    const result = await handleTransactionWithTimeout(async () => {
+      return await walletClient.createEntity({
+        payload: enc.encode(payload),
+        attributes,
+        contentType: 'application/json',
+        expiresIn: 15768000, // 6 months
+      });
+    });
+    
+    const { entityKey, txHash } = result;
+    
+    // Create txHash companion entity
+    try {
+      await walletClient.createEntity({
+        payload: enc.encode(JSON.stringify({ txHash })),
+        contentType: 'application/json',
+        attributes: [
+          { key: 'type', value: 'declaration_signature_txhash' },
+          { key: 'signatureKey', value: entityKey },
+          { key: 'txHash', value: txHash },
+          { key: 'spaceId', value: querySpaceId },
+        ],
+        expiresIn: 15768000,
+      });
+    } catch (error: any) {
+      console.warn('[signatures/route] Failed to create txhash entity:', error);
+    }
+    
+    return NextResponse.json({
+      ok: true,
+      status: 'submitted',
+      entityKey,
+      txHash,
+      message: 'Signature recorded! It may take a moment to appear.',
     });
   } catch (error: any) {
     console.error('[signatures/route] POST error:', error);
-    return NextResponse.json({ 
-      ok: false, 
-      error: error.message || 'Failed to create signature' 
-    }, { status: 500 });
+    
+    if (isTransactionTimeoutError(error)) {
+      return NextResponse.json(
+        { ok: false, error: 'Transaction submitted but pending. Please wait and refresh.', status: 'submitted_or_pending' },
+        { status: 202 }
+      );
+    }
+    
+    if (isRateLimitError(error)) {
+      return NextResponse.json(
+        { ok: false, error: 'Rate limit exceeded. Please wait and try again.' },
+        { status: 429 }
+      );
+    }
+    
+    return NextResponse.json(
+      { ok: false, error: error?.message || 'Failed to create signature' },
+      { status: 500 }
+    );
   }
 }
